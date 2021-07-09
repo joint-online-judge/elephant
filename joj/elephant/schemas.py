@@ -48,4 +48,4 @@ class File(BaseModel):
 
 
 class Config(BaseModel):
-    files: Dict[str, File]
+    files: Dict[str, File] = {}
