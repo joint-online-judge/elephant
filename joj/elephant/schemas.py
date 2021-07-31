@@ -12,6 +12,7 @@ class ArchiveType(str, Enum):
 
 
 class FileType(str, Enum):
+    default = "default"
     compile = "compile"
     runtime = "runtime"
     testcase = "testcase"
@@ -21,11 +22,23 @@ class FileType(str, Enum):
         return self.value
 
 
+class Config(BaseModel):
+    files: Dict[str, FileType] = {}
+
+    def update_files(
+        self, files_in_config: Dict[str, str], files_in_fs: Dict[str, Any]
+    ) -> None:
+        for path in files_in_fs.keys():
+            if path in files_in_config:
+                file_type = files_in_config[path]
+                if file_type not in FileType:
+                    file_type = FileType.default
+            else:
+                file_type = FileType.default
+            self.files[path] = file_type
+
+
 class File(BaseModel):
     type: FileType
     path: Path
     digest: str
-
-
-class Config(BaseModel):
-    files: Dict[str, File] = {}

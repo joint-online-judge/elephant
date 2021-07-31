@@ -3,6 +3,7 @@ from tempfile import mkdtemp
 from shutil import rmtree
 from pathlib import Path
 
+
 class Storage(ABC):
     @property
     @abstractmethod
