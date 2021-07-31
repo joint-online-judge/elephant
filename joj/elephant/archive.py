@@ -1,12 +1,12 @@
-from joj.elephant.schemas import Config, ArchiveType
-from joj.elephant.models import File
+# from joj.elephant.schemas import Config, ArchiveType
+# from joj.elephant.models import File
 
+from typing import IO
 from abc import abstractmethod, ABC
 from zipfile import ZipFile, ZIP_DEFLATED
 from tarfile import TarFile, TarInfo
 
 from io import BytesIO
-import json
 
 
 class Archive(ABC):
@@ -21,7 +21,11 @@ class Archive(ABC):
 
     @abstractmethod
     def write_file(self, arcname: str, data: bytes):
-        pass
+        raise NotImplementedError()
+
+    @abstractmethod
+    def extract_all(self, fp: IO, dest_path: str):
+        raise NotImplementedError()
 
     def __del__(self):
         self.close()
@@ -30,7 +34,11 @@ class Archive(ABC):
 class ZipArchive(Archive):
     def __init__(self):
         super().__init__()
-        self.file = ZipFile(self.file_buffer, mode="w", compression=ZIP_DEFLATED)
+        # self.file = ZipFile(self.file_buffer, mode="w", compression=ZIP_DEFLATED)
+
+    def extract_all(self, fp: IO, dest_path: str):
+        self.file = ZipFile(fp, mode="r")
+        self.file.extractall(path=dest_path)
 
     def write_file(self, filepath: str, data: bytes):
         self.file.writestr(filepath, data)
@@ -39,7 +47,7 @@ class ZipArchive(Archive):
 class TgzArchive(Archive):
     def __init__(self):
         super().__init__()
-        self.file = TarFile.open(mode="w:gz", fileobj=self.file_buffer)
+        # self.file = TarFile.open(mode="w:gz", fileobj=self.file_buffer)
 
     def write_file(self, filepath: str, data: bytes):
         file_obj = BytesIO(data)
@@ -56,5 +64,3 @@ class TgzArchive(Archive):
 #     def write_file(self, filepath: str, data: bytes):
 #         with open()
 #         self.file.(filepath, data)
-
-
