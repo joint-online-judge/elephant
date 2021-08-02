@@ -1,7 +1,17 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Any, Union, Generator, Callable, List, Optional, Literal
+from typing import (
+    Dict,
+    Any,
+    Union,
+    Generator,
+    Callable,
+    List,
+    Optional,
+    Literal,
+    Iterator,
+)
 
 
 class ArchiveType(str, Enum):
@@ -69,8 +79,26 @@ class Command(BaseModel):
     )
 
 
-Commands = List[Optional[Command]]
-CommandOrCommands = Union[Command, Commands]
+class Commands(BaseModel):
+    """A wrapper of one or multiple commands."""
+
+    __root__: List[Command] = []
+
+    def __iter__(self) -> Iterator[Command]:
+        return iter(self.__root__)
+
+    def __getitem__(self, item) -> Command:
+        return self.__root__[item]
+
+    @root_validator(pre=True)
+    def validate(cls, values) -> List[Command]:
+        if "__root__" in values:
+            command = values["__root__"]
+            if isinstance(command, Command):
+                values["__root__"] = [command.dict()]
+            elif not isinstance(command, list):
+                values["__root__"] = [command]
+        return values
 
 
 class Language(BaseModel):
@@ -89,7 +117,7 @@ class Language(BaseModel):
         "All toolchains listed in depends must be met to execute the task."
         "Overwrite the depends definition in toolchain if provided.",
     )
-    compile: Optional[CommandOrCommands] = Field(
+    compile: Optional[Commands] = Field(
         None,
         description="Command(s) in compile stage, can be omitted for an interpreter."
         "Overwrite the compile definition in toolchain if provided.",
@@ -99,7 +127,7 @@ class Language(BaseModel):
         description="Command in runtime stage."
         "Overwrite the runtime definition in config.",
     )
-    judge: Optional[CommandOrCommands] = Field(
+    judge: Optional[Commands] = Field(
         None,
         description="Command(s) in judge stage. (not implemented)"
         "Overwrite the judge definition in config.",
@@ -121,7 +149,7 @@ class Case(Command):
         "if not set, the default judge will accept this case directly."
         "It will be used as the file displayed in <JOJ Answer>",
     )
-    judge: Optional[CommandOrCommands] = Field(
+    judge: Optional[Commands] = Field(
         None,
         description="Command(s) in judge stage. (not implemented)"
         "Overwrite the judge definition in language.",
@@ -134,12 +162,32 @@ class Case(Command):
     )
 
 
+class File(BaseModel):
+    src: str
+    dest: Optional[str] = None
+
+    @root_validator(pre=True)
+    def validate(cls, values) -> "File":
+        if "__root__" in values:
+            if isinstance(values["__root__"], str):
+                values["src"] = values["__root__"]
+        return values
+
+
+class ConfigFiles(BaseModel):
+    """Files can be redefined across the stages (and in one stage)."""
+
+    compile: Optional[List[File]] = None
+    runtime: Optional[List[File]] = None
+    judge: Optional[List[File]] = None
+
+
 class Config(BaseModel):
     runtime: Optional[Command] = Field(
         None,
         description="Command in runtime stage.",
     )
-    judge: Optional[CommandOrCommands] = Field(
+    judge: Optional[Commands] = Field(
         None,
         description="Command(s) in judge stage. (not implemented, only supports diff now)"
         "If not provided, a specially designed diff program will be used.",
@@ -153,9 +201,10 @@ class Config(BaseModel):
         description="List of cases."
         "If empty, the record will be accepted directly after a successful compilation.",
     )
-
-    # TODO: design files format
-    files: Dict[str, FileType] = {}
+    files: ConfigFiles = Field(
+        ConfigFiles(),
+        description="List of files in compile, runtime and judge stage.",
+    )
 
     def update_files(
         self, files_in_config: Dict[str, str], files_in_fs: Dict[str, Any]
@@ -168,9 +217,3 @@ class Config(BaseModel):
             else:
                 file_type = FileType.default
             self.files[path] = file_type
-
-
-class File(BaseModel):
-    type: FileType
-    path: Path
-    digest: str

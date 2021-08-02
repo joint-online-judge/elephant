@@ -3,6 +3,9 @@ import rapidjson
 from gitignore_parser import parse_gitignore
 from pathlib import Path
 
+from fs.base import FS
+from fs.mirror import mirror
+
 from joj.elephant.rclone import RClone
 from joj.elephant.storage import Storage, LocalStorage, S3Storage, LocalTempStorage
 from joj.elephant.schemas import ArchiveType, Config
@@ -31,17 +34,16 @@ def get_archive(
 
 
 class Manager:
-    def __init__(self, rclone: RClone, source: Storage, dest: Optional[Storage] = None):
-        self.rclone: RClone = rclone
-        self.source: Storage = source
-        self.dest: Optional[Storage] = dest
-        self.files = {}
-        self.config = Config()
+    def __init__(self, source: FS, dest: Optional[FS] = None):
+        self.source: FS = source
+        self.dest: Optional[FS] = dest
+        # self.files = {}
+        # self.config = Config()
 
-    def sync(self):
+    def sync(self, workers=4):
         if self.dest is None:
             raise ValueError("destination not specified!")
-        self.rclone.sync(self.source.path, self.dest.path)
+        mirror(self.source, self.dest, copy_if_newer=False, workers=workers)
 
     def extract_archive_source(
         self,
@@ -55,14 +57,19 @@ class Manager:
         archive, archive_type = get_archive(filename, archive_type)
         archive.extract_all(archive_fp, self.source.path)
 
-    def list_files(self, path: str) -> None:
-        response = self.rclone.lsjson(path, ["-R"])
-        if response["code"] != 0:
-            raise ValueError(f"ls repository failed, error: {response['error']}!")
-        files = rapidjson.loads(response["out"])
-        result = {file["Path"]: file for file in files}
-        self.rclone.log.info(result)
-        self.files = result
+    def list_files(self, fs: FS) -> None:
+        for step in fs.walk.walk():
+            print('In dir {}'.format(step.path))
+            print('sub-directories: {!r}'.format(step.dirs))
+            print('files: {!r}'.format(step.files))
+
+        # response = self.rclone.lsjson(path, ["-R"])
+        # if response["code"] != 0:
+        #     raise ValueError(f"ls repository failed, error: {response['error']}!")
+        # files = rapidjson.loads(response["out"])
+        # result = {file["Path"]: file for file in files}
+        # self.rclone.log.info(result)
+        # self.files = result
 
     def ensure_file_in_local_path(self, filename: str) -> Optional[str]:
         if filename not in self.files:
