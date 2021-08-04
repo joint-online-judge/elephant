@@ -1,8 +1,5 @@
-from typing import Optional, IO
-from abc import abstractmethod, ABC
-
-from tempfile import mkdtemp
-from shutil import rmtree
+from typing import Optional, IO, BinaryIO
+from abc import ABC
 from pathlib import Path
 
 from fs.base import FS
@@ -11,8 +8,11 @@ from fs.osfs import OSFS
 from fs.tempfs import TempFS
 from fs.zipfs import ZipFS
 from fs.tarfs import TarFS
+from fs.errors import FSError
+from fs.info import Info
 
-from joj.elephant.schemas import ArchiveType
+from joj.elephant.schemas import ArchiveType, FileInfo
+from joj.elephant.errors import FileSystemError
 
 
 class Storage(ABC):
@@ -22,6 +22,62 @@ class Storage(ABC):
     @property
     def fs(self) -> FS:
         return self._fs
+
+    @staticmethod
+    def parse_file_info(path: Path, info: Info) -> FileInfo:
+        return FileInfo(
+            path=info.make_path(str(path.parent)),
+            is_dir=info.is_dir,
+            mtime=info.modified,
+            size_bytes=info.size,
+        )
+
+    def getinfo(self, path: Path) -> FileInfo:
+        info = self.fs.getinfo(path=str(path), namespaces=["details"])
+        return self.parse_file_info(path, info)
+
+    def upload(
+        self, path: Path, file: BinaryIO, chunk_size: Optional[int] = None
+    ) -> FileInfo:
+        try:
+            self.fs.makedirs(path=str(path.parent), recreate=True)
+            self.fs.upload(path=str(path), file=file, chunk_size=chunk_size)
+            return self.getinfo(path)
+        except FSError as e:
+            raise FileSystemError(str(e))
+
+    def download(
+        self, path: Path, file: BinaryIO, chunk_size: Optional[int] = None
+    ) -> None:
+        try:
+            self.fs.download(path=str(path), file=file, chunk_size=chunk_size)
+            # return self.fs.getinfo(path=str(path))
+        except FSError as e:
+            raise FileSystemError(str(e))
+
+    def delete(self, path: Path) -> FileInfo:
+        try:
+            file_info = self.getinfo(path)
+            self.fs.remove(path=str(path))
+            return file_info
+        except FSError as e:
+            raise FileSystemError(str(e))
+
+    def delete_dir(self, path: Path) -> FileInfo:
+        try:
+            file_info = self.getinfo(path)
+            self.fs.removedir(path=str(path))
+            return file_info
+        except FSError as e:
+            raise FileSystemError(str(e))
+
+    def delete_tree(self, path: Path) -> FileInfo:
+        try:
+            file_info = self.getinfo(path)
+            self.fs.removetree(dir_path=str(path))
+            return file_info
+        except FSError as e:
+            raise FileSystemError(str(e))
 
 
 class S3Storage(Storage):
@@ -41,6 +97,15 @@ class S3Storage(Storage):
             aws_secret_access_key=password,
             endpoint_url=endpoint_url,
         )
+
+    def getinfo(self, path: Path) -> FileInfo:
+        info = self.fs.getinfo(path=str(path), namespaces=["details", "s3"])
+        file_info = self.parse_file_info(path, info)
+        checksum: Optional[str] = info.raw["s3"].get("e_tag", None)
+        if checksum:
+            checksum = checksum.strip('"')
+        file_info.checksum = checksum
+        return file_info
 
 
 class LakeFSStorage(S3Storage):

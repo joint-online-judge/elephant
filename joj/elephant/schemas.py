@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field, root_validator
 from enum import Enum
 from pathlib import Path
@@ -30,6 +32,14 @@ class FileType(str, Enum):
 
     def __str__(self):
         return self.value
+
+
+class FileInfo(BaseModel):
+    path: str
+    is_dir: bool
+    checksum: Optional[str] = None
+    mtime: Optional[Union[datetime, str]] = None
+    size_bytes: int = 0
 
 
 class Command(BaseModel):
