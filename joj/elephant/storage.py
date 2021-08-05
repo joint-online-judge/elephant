@@ -79,6 +79,9 @@ class Storage(ABC):
         except FSError as e:
             raise FileSystemError(str(e))
 
+    def close(self) -> None:
+        self.fs.close()
+
 
 class S3Storage(Storage):
     def __init__(
@@ -139,13 +142,14 @@ class ArchiveStorage(Storage):
         fd: Optional[IO] = None,
         write: bool = False,
         archive_type: ArchiveType = ArchiveType.unknown,
+        compression: Optional[str] = None,
     ):
         super().__init__()
         if filename and archive_type == ArchiveType.unknown:
             if filename.endswith(".zip"):
                 archive_type = ArchiveType.zip
-            elif filename.endswith((".tar", ".gz", ".tgz")):
-                archive_type = ArchiveType.tgz
+            elif filename.endswith((".tar", ".tar.gz", ".tgz")):
+                archive_type = ArchiveType.tar
 
         if fd is not None:
             file = fd
@@ -156,7 +160,7 @@ class ArchiveStorage(Storage):
 
         if archive_type == ArchiveType.zip:
             self._fs = ZipFS(file, write=write)
-        elif archive_type == ArchiveType.tgz:
-            self._fs = TarFS(file, write=write)
+        elif archive_type == ArchiveType.tar:
+            self._fs = TarFS(file, write=write, compression=compression)
         else:
             raise ValueError(f"archive type {archive_type} not supported!")

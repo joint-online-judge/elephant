@@ -18,8 +18,8 @@ from typing import (
 
 class ArchiveType(str, Enum):
     zip = "zip"
-    tgz = "tgz"
-    rar = "rar"
+    tar = "tar"
+    # rar = "rar"
     unknown = "unknown"
 
 

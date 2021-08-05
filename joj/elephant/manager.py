@@ -53,12 +53,12 @@ def get_archive(
             archive_type = ArchiveType.zip
         elif filename.endswith(".rar"):
             archive_type = ArchiveType.rar
-        elif filename.endswith((".tar", ".gz", ".tgz")):
-            archive_type = ArchiveType.tgz
+        elif filename.endswith((".tar", ".tar.gz", ".tgz")):
+            archive_type = ArchiveType.tar
 
     if archive_type == ArchiveType.zip:
         archive = ZipArchive()
-    elif archive_type == ArchiveType.tgz:
+    elif archive_type == ArchiveType.tar:
         archive = TgzArchive()
     else:
         raise ArchiveError(f"archive type {archive_type.value} not supported!")

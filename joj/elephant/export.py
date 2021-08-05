@@ -8,7 +8,7 @@ async def export_to_archive(config: Config, archive_type: ArchiveType):
     archive: Archive
     if archive_type == ArchiveType.zip:
         archive = ZipArchive()
-    elif archive_type == ArchiveType.tgz:
+    elif archive_type == ArchiveType.tar:
         archive = TgzArchive()
     else:
         raise ValueError(archive_type)
