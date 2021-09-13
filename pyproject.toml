@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "joj-elephant"
+version = "0.1.0"
+description = "JOJ Problem Config Middleware"
+authors = ["JOJ Dev Team"]
+license = "MIT"
+packages = [
+    { include = "joj" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pydantic = "^1.8.2"
+rarfile = "^4.0"
+python-rapidjson = "^1.4"
+gitignore-parser = "^0.0.8"
+fs = "^2.4.13"
+fs-s3fs = "^1.1.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
