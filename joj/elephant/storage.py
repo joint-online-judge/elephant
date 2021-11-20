@@ -1,23 +1,26 @@
+import asyncio
+import concurrent.futures
 from typing import Optional, IO, BinaryIO
 from abc import ABC
 from pathlib import Path
+import patoolib
 
 from fs.base import FS
 from fs_s3fs import S3FS
 from fs.osfs import OSFS
 from fs.tempfs import TempFS
-from fs.zipfs import ZipFS
-from fs.tarfs import TarFS
 from fs.errors import FSError
 from fs.info import Info
 
-from joj.elephant.schemas import ArchiveType, FileInfo
+from joj.elephant.schemas import FileInfo
 from joj.elephant.errors import FileSystemError
 
 
 class Storage(ABC):
-    def __init__(self):
-        self._fs: Optional[FS] = None
+    _fs: Optional[FS]
+
+    def __init__(self, path: str):
+        self.path = path
 
     @property
     def fs(self) -> FS:
@@ -82,17 +85,21 @@ class Storage(ABC):
     def close(self) -> None:
         self.fs.close()
 
+    async def extract_all(self):
+        pass
+
 
 class S3Storage(Storage):
     def __init__(
         self,
+        host_in_config: str,
         bucket_name: str,
         dir_path: str = "/",
         username: Optional[str] = None,
         password: Optional[str] = None,
         endpoint_url: Optional[str] = None,
     ) -> None:
-        super().__init__()
+        super().__init__(path=f"{host_in_config}:{bucket_name}{dir_path}")
         self._fs = S3FS(
             bucket_name=bucket_name,
             dir_path=dir_path,
@@ -110,57 +117,49 @@ class S3Storage(Storage):
         file_info.checksum = checksum
         return file_info
 
+    async def extract_all(self):
+        raise NotImplementedError()
+
 
 class LakeFSStorage(S3Storage):
     def __init__(
         self,
+        host_in_config: str,
         endpoint_url: str,
         repo_name: str,
-        branch_name: str = "main",
+        branch_name: str = "master",
         username: Optional[str] = None,
         password: Optional[str] = None,
     ) -> None:
-        super().__init__(repo_name, f"/{branch_name}", username, password, endpoint_url)
+        super().__init__(
+            host_in_config,
+            repo_name,
+            f"/{branch_name}",
+            username,
+            password,
+            endpoint_url,
+        )
 
 
 class LocalStorage(Storage):
     def __init__(self, local_path: str, create=False, create_mode=511) -> None:
-        super().__init__()
         self._fs = OSFS(local_path, create=create, create_mode=create_mode)
+        super().__init__(self._fs.getsyspath("/"))
 
 
 class TempStorage(Storage):
     def __init__(self):
-        super().__init__()
         self._fs = TempFS()
+        super().__init__(self._fs.getsyspath("/"))
 
 
-class ArchiveStorage(Storage):
+class ArchiveStorage(TempStorage):
     def __init__(
         self,
-        filename: Optional[str] = None,
-        fd: Optional[IO] = None,
-        write: bool = False,
-        archive_type: ArchiveType = ArchiveType.unknown,
-        compression: Optional[str] = None,
+        archive_path: str,
     ):
         super().__init__()
-        if filename and archive_type == ArchiveType.unknown:
-            if filename.endswith(".zip"):
-                archive_type = ArchiveType.zip
-            elif filename.endswith((".tar", ".tar.gz", ".tgz")):
-                archive_type = ArchiveType.tar
+        self.archive_path = archive_path
 
-        if fd is not None:
-            file = fd
-        elif filename:
-            file = filename
-        else:
-            raise ValueError(f"archive not found!")
-
-        if archive_type == ArchiveType.zip:
-            self._fs = ZipFS(file, write=write)
-        elif archive_type == ArchiveType.tar:
-            self._fs = TarFS(file, write=write, compression=compression)
-        else:
-            raise ValueError(f"archive type {archive_type} not supported!")
+    def extract_all(self):
+        patoolib.extract_archive(self.archive_path, self.path)

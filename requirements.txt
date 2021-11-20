@@ -1,7 +1,0 @@
-pydantic>=1.8.2
-rarfile~=4.0
-python-rapidjson
-gitignore_parser
-fs
-fs-s3fs
-

@@ -3,12 +3,13 @@ import rapidjson
 from gitignore_parser import rule_from_pattern, handle_negation
 from pathlib import Path
 from os.path import dirname
-from logging import Logger
+from loguru import logger
 from contextlib import contextmanager
 
 from fs.mirror import mirror
 from fs.errors import FSError
 
+from joj.elephant.rclone import RClone
 from joj.elephant.storage import Storage, LocalStorage, S3Storage
 from joj.elephant.schemas import ArchiveType, Config
 from joj.elephant.archive import Archive, ZipArchive, TgzArchive
@@ -67,8 +68,10 @@ def get_archive(
 
 
 class Manager:
-    def __init__(self, logger: Logger, source: Storage, dest: Optional[Storage] = None):
-        self.logger = logger
+    def __init__(
+        self, rclone: RClone, source: Storage, dest: Optional[Storage] = None
+    ):
+        self.rclone = rclone
         self.source: Storage = source
         self.dest: Optional[Storage] = dest
         self.ignore: Optional[Callable[[str], bool]] = None
@@ -110,9 +113,9 @@ class Manager:
         else:
             raise FileSystemError("you can only use source or (not and) destination!")
         for step in fs.walk.walk():
-            self.logger.info("In dir {}".format(step.path))
-            self.logger.info("sub-directories: {!r}".format(step.dirs))
-            self.logger.info("files: {!r}".format(step.files))
+            logger.info("In dir {}".format(step.path))
+            logger.info("sub-directories: {!r}".format(step.dirs))
+            logger.info("files: {!r}".format(step.files))
             for dir in step.dirs:
                 fs.makedir(f"{step.path}/{dir.name}", recreate=True)
 
@@ -167,7 +170,7 @@ class Manager:
                 raise ConfigError("config file not found!")
             data = rapidjson.load(config_file)
         self.config = Config(**data)
-        self.logger.info(self.config)
+        logger.info(self.config)
 
     def _generate_config(self):
         filename = "config.generated.json"
@@ -197,11 +200,12 @@ class Manager:
         except FSError as e:
             raise FileSystemError(str(e))
 
-    def sync_without_validation(self, workers: int = 4):
+    def sync_without_validation(self):
         """Sync source to dest directly, can be use as clone."""
         if self.dest is None:
             raise FileSystemSyncError("sync failed, destination not defined!")
         try:
-            mirror(self.source.fs, self.dest.fs, copy_if_newer=False, workers=workers)
+            self.rclone.sync(self.source.path, self.dest.path)
         except FSError as e:
             raise FileSystemError(str(e))
+
