@@ -68,9 +68,7 @@ def get_archive(
 
 
 class Manager:
-    def __init__(
-        self, rclone: RClone, source: Storage, dest: Optional[Storage] = None
-    ):
+    def __init__(self, rclone: RClone, source: Storage, dest: Optional[Storage] = None):
         self.rclone = rclone
         self.source: Storage = source
         self.dest: Optional[Storage] = dest
@@ -205,7 +203,7 @@ class Manager:
         if self.dest is None:
             raise FileSystemSyncError("sync failed, destination not defined!")
         try:
-            self.rclone.sync(self.source.path, self.dest.path)
+            # options = ["--stats-one-line", "--stats", "1s", "-v"]
+            self.rclone.sync(self.source.path, self.dest.path, ["-v"])
         except FSError as e:
             raise FileSystemError(str(e))
-

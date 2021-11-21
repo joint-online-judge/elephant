@@ -3,6 +3,7 @@ import concurrent.futures
 from typing import Optional, IO, BinaryIO
 from abc import ABC
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 import patoolib
 
 from fs.base import FS
@@ -11,6 +12,8 @@ from fs.osfs import OSFS
 from fs.tempfs import TempFS
 from fs.errors import FSError
 from fs.info import Info
+
+from loguru import logger
 
 from joj.elephant.schemas import FileInfo
 from joj.elephant.errors import FileSystemError
@@ -117,6 +120,10 @@ class S3Storage(Storage):
         file_info.checksum = checksum
         return file_info
 
+    # def download(self, remote_path: Path, local_path: Path):
+        
+
+
     async def extract_all(self):
         raise NotImplementedError()
 
@@ -154,12 +161,15 @@ class TempStorage(Storage):
 
 
 class ArchiveStorage(TempStorage):
-    def __init__(
-        self,
-        archive_path: str,
-    ):
+    file_path: str
+    temp_file: Optional[IO]
+
+    def __init__(self, file_path: str):
         super().__init__()
-        self.archive_path = archive_path
+        self.file_path = file_path
 
     def extract_all(self):
-        patoolib.extract_archive(self.archive_path, self.path)
+        patoolib.extract_archive(self.file_path, outdir=self.path)
+
+    def compress_all(self):
+        patoolib.create_archive(self.file_path, [self.path])
