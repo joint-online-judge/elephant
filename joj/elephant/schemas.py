@@ -16,22 +16,24 @@ from typing import (
 )
 
 
-class ArchiveType(str, Enum):
+class StrEnumMixin(str, Enum):
+    def __str__(self) -> str:
+        return self.value
+
+
+class ArchiveType(StrEnumMixin, Enum):
     zip = "zip"
     tar = "tar"
     # rar = "rar"
     unknown = "unknown"
 
 
-class FileType(str, Enum):
+class FileType(StrEnumMixin, Enum):
     default = "default"
     compile = "compile"
     runtime = "runtime"
     testcase = "testcase"
     judge = "judge"
-
-    def __str__(self):
-        return self.value
 
 
 class FileInfo(BaseModel):
