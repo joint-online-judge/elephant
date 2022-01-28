@@ -1,3 +1,4 @@
+# type: ignore
 """
 A Python wrapper for rclone.
 
@@ -24,9 +25,10 @@ Modified by: tc-imba (add async support)
 
 # pylint: disable=W0102,W0703,C0103
 
-from loguru import logger
 from asyncio import subprocess
+
 from aiofiles import tempfile
+from loguru import logger
 
 
 class AsyncRClone:

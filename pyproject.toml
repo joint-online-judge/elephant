@@ -1,32 +1,52 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+
+[tool]
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+exclude = [
+    'rclone_async\.py$',
+]
+follow_imports = "normal"
+no_implicit_reexport = true
+plugins = "pydantic.mypy"
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
 [tool.poetry]
-name = "joj-elephant"
-version = "0.1.0"
-description = "JOJ Problem Config Middleware"
 authors = ["JOJ Dev Team"]
+description = "JOJ Problem Config Middleware"
 license = "MIT"
+name = "joj-elephant"
 packages = [
     { include = "joj" },
 ]
+version = "0.1.0"
 
 [tool.poetry.dependencies]
-python = "^3.8"
-pydantic = {extras = ["dotenv"], version = "^1.8.2"}
-rarfile = "^4.0"
-python-rapidjson = "^1.4"
-gitignore-parser = "^0.0.8"
-fs = "^2.4.13"
-fs-s3fs = "^1.1.1"
 aiofiles = "^0.7.0"
-loguru = "^0.5.3"
 asynctest = {version = "^0.13.0", optional = true}
 coverage = {version = "^5.5", optional = true}
+fs = "^2.4.13"
+fs-s3fs = "^1.1.1"
+gitignore-parser = "^0.0.8"
+lakefs-client = {version = "^0.55.0", optional = true}
+loguru = "^0.5.3"
+patool = "^1.12"
+pydantic = {extras = ["dotenv"], version = "^1.8.2"}
 pytest = {version = "^6.2.5", optional = true}
 pytest-asyncio = {version = "^0.15.1", optional = true}
 pytest-cov = {version = "^2.12.1", optional = true}
 pytest-depends = {version = "^1.0.1", optional = true}
 pytest-lazy-fixture = {version = "^0.6.3", optional = true}
-lakefs-client = {version = "^0.55.0", optional = true}
-patool = "^1.12"
+python = "^3.8"
+python-rapidjson = "^1.4"
+rarfile = "^4.0"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.15.0"
@@ -43,6 +63,8 @@ test = [
     "lakefs-client",
 ]
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true

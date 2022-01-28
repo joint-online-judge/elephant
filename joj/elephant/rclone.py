@@ -1,3 +1,4 @@
+# type: ignore
 """
 A Python wrapper for rclone.
 """
@@ -23,6 +24,7 @@ A Python wrapper for rclone.
 
 import subprocess
 import tempfile
+
 from loguru import logger
 
 
@@ -34,7 +36,6 @@ class RClone:
     def __init__(self, cfg):
         self.cfg = cfg.replace("\\n", "\n")
         logger.debug("rclone config: ~{}~", self.cfg)
-
 
     def _execute(self, command_with_args):
         """

@@ -1,19 +1,8 @@
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 from pydantic import BaseModel, Field, root_validator
-from enum import Enum
-from pathlib import Path
-from typing import (
-    Dict,
-    Any,
-    Union,
-    Generator,
-    Callable,
-    List,
-    Optional,
-    Literal,
-    Iterator,
-)
 
 
 class StrEnumMixin(str, Enum):
@@ -96,14 +85,14 @@ class Commands(BaseModel):
 
     __root__: List[Command] = []
 
-    def __iter__(self) -> Iterator[Command]:
+    def __iter__(self) -> Iterator[Command]:  # type: ignore
         return iter(self.__root__)
 
-    def __getitem__(self, item) -> Command:
+    def __getitem__(self, item: Any) -> Command:
         return self.__root__[item]
 
     @root_validator(pre=True)
-    def validate(cls, values) -> List[Command]:
+    def validate(cls, values: Any) -> List[Command]:  # type: ignore
         if "__root__" in values:
             command = values["__root__"]
             if isinstance(command, Command):
@@ -179,7 +168,7 @@ class File(BaseModel):
     dest: Optional[str] = None
 
     @root_validator(pre=True)
-    def validate(cls, values) -> "File":
+    def validate(cls, values: Any) -> "File":  # type: ignore
         if "__root__" in values:
             if isinstance(values["__root__"], str):
                 values["src"] = values["__root__"]
@@ -228,4 +217,5 @@ class Config(BaseModel):
                     file_type = FileType.default
             else:
                 file_type = FileType.default
-            self.files[path] = file_type
+            # TODO: compatible with current self.files
+            # self.files[path] = file_type

@@ -1,22 +1,17 @@
-import asyncio
-import concurrent.futures
-from typing import Optional, IO, BinaryIO
 from abc import ABC
 from pathlib import Path
-from tempfile import NamedTemporaryFile
-import patoolib
+from typing import IO, Any, BinaryIO, Optional, SupportsInt
 
+import patoolib
 from fs.base import FS
-from fs_s3fs import S3FS
-from fs.osfs import OSFS
-from fs.tempfs import TempFS
 from fs.errors import FSError
 from fs.info import Info
+from fs.osfs import OSFS
+from fs.tempfs import TempFS
+from fs_s3fs import S3FS
 
-from loguru import logger
-
-from joj.elephant.schemas import FileInfo
 from joj.elephant.errors import FileSystemError
+from joj.elephant.schemas import FileInfo
 
 
 class Storage(ABC):
@@ -88,7 +83,7 @@ class Storage(ABC):
     def close(self) -> None:
         self.fs.close()
 
-    async def extract_all(self):
+    async def extract_all(self) -> None:
         pass
 
 
@@ -121,10 +116,8 @@ class S3Storage(Storage):
         return file_info
 
     # def download(self, remote_path: Path, local_path: Path):
-        
 
-
-    async def extract_all(self):
+    async def extract_all(self) -> None:
         raise NotImplementedError()
 
 
@@ -149,27 +142,29 @@ class LakeFSStorage(S3Storage):
 
 
 class LocalStorage(Storage):
-    def __init__(self, local_path: str, create=False, create_mode=511) -> None:
+    def __init__(
+        self, local_path: str, create: bool = False, create_mode: SupportsInt = 511
+    ) -> None:
         self._fs = OSFS(local_path, create=create, create_mode=create_mode)
         super().__init__(self._fs.getsyspath("/"))
 
 
 class TempStorage(Storage):
-    def __init__(self):
+    def __init__(self) -> None:
         self._fs = TempFS()
         super().__init__(self._fs.getsyspath("/"))
 
 
 class ArchiveStorage(TempStorage):
     file_path: str
-    temp_file: Optional[IO]
+    temp_file: Optional[IO[Any]]
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str) -> None:
         super().__init__()
         self.file_path = file_path
 
-    def extract_all(self):
+    async def extract_all(self) -> None:  # FIXME: should it be async-ed?
         patoolib.extract_archive(self.file_path, outdir=self.path)
 
-    def compress_all(self):
+    def compress_all(self) -> None:
         patoolib.create_archive(self.file_path, [self.path])

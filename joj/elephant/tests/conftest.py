@@ -1,8 +1,7 @@
-import pytest
 import boto3
-
-from lakefs_client.client import LakeFSClient
+import pytest
 from lakefs_client import Configuration
+from lakefs_client.client import LakeFSClient
 
 from joj.elephant.tests.config import Settings
 
@@ -38,7 +37,7 @@ def s3_bucket(settings: Settings) -> str:
     )
     try:
         s3.create_bucket(Bucket=bucket_name)
-    except:
+    except Exception:
         pass
     return f"s3://{bucket_name}"
 
@@ -51,4 +50,3 @@ def lakefs_client(settings: Settings) -> LakeFSClient:
         password=settings.lakefs_password,
     )
     return LakeFSClient(configuration)
-

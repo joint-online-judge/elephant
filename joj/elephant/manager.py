@@ -1,29 +1,28 @@
-from typing import IO, Optional, Tuple, Dict, Any, Callable
-import rapidjson
-from gitignore_parser import rule_from_pattern, handle_negation
-from pathlib import Path
-from os.path import dirname
-from loguru import logger
 from contextlib import contextmanager
+from os.path import dirname
+from pathlib import Path
+from typing import IO, Any, Callable, Generator, Optional, Tuple
 
-from fs.mirror import mirror
+import rapidjson
 from fs.errors import FSError
+from gitignore_parser import handle_negation, rule_from_pattern
+from loguru import logger
 
-from joj.elephant.rclone import RClone
-from joj.elephant.storage import Storage, LocalStorage, S3Storage
-from joj.elephant.schemas import ArchiveType, Config
-from joj.elephant.archive import Archive, ZipArchive, TgzArchive
+from joj.elephant.archive import Archive, TgzArchive, ZipArchive
 from joj.elephant.errors import (
-    FileSystemError,
-    FileSystemUndefinedError,
-    FileSystemSyncError,
-    ConfigError,
     ArchiveError,
+    ConfigError,
+    FileSystemError,
+    FileSystemSyncError,
+    FileSystemUndefinedError,
 )
+from joj.elephant.rclone import RClone
+from joj.elephant.schemas import ArchiveType, Config
+from joj.elephant.storage import LocalStorage, S3Storage, Storage
 
 
 def fs_parse_gitignore_fd(
-    ignore_file: IO, base_dir: Optional[str] = None
+    ignore_file: IO[Any], base_dir: Optional[str] = None
 ) -> Callable[[str], bool]:
     full_path = "/.gitignore"
     if base_dir is None:
@@ -91,12 +90,14 @@ class Manager:
     #     archive.extract_all(archive_fp, self.source.path)
 
     @contextmanager
-    def _open_source_file(self, filename: str, mode: str = "r"):
+    def _open_source_file(
+        self, filename: str, mode: str = "r"
+    ) -> Generator[Optional[IO[Any]], None, None]:
         if self.source.fs.exists(filename):
             yield self.source.fs.open(filename, mode)
         yield None
 
-    def _init_ignore(self):
+    def _init_ignore(self) -> None:
         with self._open_source_file(".gitignore") as ignore_file:
             if ignore_file:
                 self.ignore = fs_parse_gitignore_fd(ignore_file)
@@ -162,7 +163,7 @@ class Manager:
     #     # TODO: should we delete ignored files on the server?
     #     self.files = new_files
 
-    def _parse_and_update_config(self):
+    def _parse_and_update_config(self) -> None:
         with self._open_source_file("config.json") as config_file:
             if config_file is None:
                 raise ConfigError("config file not found!")
@@ -170,8 +171,9 @@ class Manager:
         self.config = Config(**data)
         logger.info(self.config)
 
-    def _generate_config(self):
+    def _generate_config(self) -> None:
         filename = "config.generated.json"
+        assert self.config
         with self.source.fs.open(filename, mode="w") as f:
             rapidjson.dump(f, self.config.dict(), indent=2)
 
@@ -198,7 +200,7 @@ class Manager:
         except FSError as e:
             raise FileSystemError(str(e))
 
-    def sync_without_validation(self):
+    def sync_without_validation(self) -> None:
         """Sync source to dest directly, can be use as clone."""
         if self.dest is None:
             raise FileSystemSyncError("sync failed, destination not defined!")

@@ -1,10 +1,10 @@
 import json
 
-from joj.elephant.archive import Archive, ZipArchive, TgzArchive
-from joj.elephant.schemas import ArchiveType, Config, File
+from joj.elephant.archive import Archive, TgzArchive, ZipArchive
+from joj.elephant.schemas import ArchiveType, Config
 
 
-async def export_to_archive(config: Config, archive_type: ArchiveType):
+async def export_to_archive(config: Config, archive_type: ArchiveType) -> None:
     archive: Archive
     if archive_type == ArchiveType.zip:
         archive = ZipArchive()
