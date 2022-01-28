@@ -56,6 +56,7 @@ def get_archive(
         elif filename.endswith((".tar", ".tar.gz", ".tgz")):
             archive_type = ArchiveType.tar
 
+    archive: Archive
     if archive_type == ArchiveType.zip:
         archive = ZipArchive()
     elif archive_type == ArchiveType.tar:

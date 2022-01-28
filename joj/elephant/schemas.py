@@ -13,7 +13,7 @@ class StrEnumMixin(str, Enum):
 class ArchiveType(StrEnumMixin, Enum):
     zip = "zip"
     tar = "tar"
-    # rar = "rar"
+    rar = "rar"
     unknown = "unknown"
 
 

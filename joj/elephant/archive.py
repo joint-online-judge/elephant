@@ -48,6 +48,9 @@ class TgzArchive(Archive):
         super().__init__()
         # self.file = TarFile.open(mode="w:gz", fileobj=self.file_buffer)
 
+    def extract_all(self, fp: IO[Any], dest_path: str) -> None:
+        raise NotImplementedError()  # TODO: finish this part
+
     def write_file(self, filepath: str, data: bytes) -> None:
         file_obj = BytesIO(data)
         tar_info = TarInfo(name=filepath)

@@ -1,4 +1,3 @@
-# type: ignore
 """
 A Python wrapper for rclone.
 """
@@ -24,6 +23,7 @@ A Python wrapper for rclone.
 
 import subprocess
 import tempfile
+from typing import Any, Dict, List
 
 from loguru import logger
 
@@ -33,11 +33,11 @@ class RClone:
     Wrapper class for rclone.
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg: str) -> None:
         self.cfg = cfg.replace("\\n", "\n")
         logger.debug("rclone config: ~{}~", self.cfg)
 
-    def _execute(self, command_with_args):
+    def _execute(self, command_with_args: List[str]) -> Dict[str, Any]:
         """
         Execute the given `command_with_args` using Popen
         Args:
@@ -67,7 +67,7 @@ class RClone:
             logger.exception("Error running command. Reason: {}", generic_e)
             return {"code": -30, "error": generic_e}
 
-    def run_cmd(self, command, extra_args=[]):
+    def run_cmd(self, command: str, extra_args: List[str] = []) -> Dict[str, Any]:
         """
         Execute rclone command
         Args:
@@ -87,7 +87,7 @@ class RClone:
             cfg_file.close()
             return command_result
 
-    def copy(self, source, dest, flags=[]):
+    def copy(self, source: str, dest: str, flags: List[str] = []) -> Dict[str, Any]:
         """
         Executes: rclone copy source:path dest:path [flags]
         Args:
@@ -97,7 +97,7 @@ class RClone:
         """
         return self.run_cmd(command="copy", extra_args=[source] + [dest] + flags)
 
-    def sync(self, source, dest, flags=[]):
+    def sync(self, source: str, dest: str, flags: List[str] = []) -> Dict[str, Any]:
         """
         Executes: rclone sync source:path dest:path [flags]
         Args:
@@ -107,7 +107,7 @@ class RClone:
         """
         return self.run_cmd(command="sync", extra_args=[source] + [dest] + flags)
 
-    def listremotes(self, flags=[]):
+    def listremotes(self, flags: List[str] = []) -> Dict[str, Any]:
         """
         Executes: rclone listremotes [flags]
         Args:
@@ -115,7 +115,7 @@ class RClone:
         """
         return self.run_cmd(command="listremotes", extra_args=flags)
 
-    def ls(self, dest, flags=[]):
+    def ls(self, dest: str, flags: List[str] = []) -> Dict[str, Any]:
         """
         Executes: rclone ls remote:path [flags]
         Args:
@@ -123,7 +123,7 @@ class RClone:
         """
         return self.run_cmd(command="ls", extra_args=[dest] + flags)
 
-    def lsjson(self, dest, flags=[]):
+    def lsjson(self, dest: str, flags: List[str] = []) -> Dict[str, Any]:
         """
         Executes: rclone lsjson remote:path [flags]
         Args:
@@ -131,7 +131,7 @@ class RClone:
         """
         return self.run_cmd(command="lsjson", extra_args=[dest] + flags)
 
-    def delete(self, dest, flags=[]):
+    def delete(self, dest: str, flags: List[str] = []) -> Dict[str, Any]:
         """
         Executes: rclone delete remote:path
         Args:
@@ -140,7 +140,7 @@ class RClone:
         return self.run_cmd(command="delete", extra_args=[dest] + flags)
 
 
-def with_config(cfg):
+def with_config(cfg: str) -> RClone:
     """
     Configure a new RClone instance.
     """
