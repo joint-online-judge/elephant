@@ -3,7 +3,7 @@ from os.path import dirname
 from pathlib import Path
 from typing import IO, Any, Callable, Generator, Optional, Tuple
 
-import rapidjson
+import orjson
 from fs.errors import FSError
 from gitignore_parser import handle_negation, rule_from_pattern
 from loguru import logger
@@ -168,15 +168,16 @@ class Manager:
         with self._open_source_file("config.json") as config_file:
             if config_file is None:
                 raise ConfigError("config file not found!")
-            data = rapidjson.load(config_file)
+            data = orjson.loads(config_file.read())
         self.config = Config(**data)
         logger.info(self.config)
 
     def _generate_config(self) -> None:
         filename = "config.generated.json"
         assert self.config
-        with self.source.fs.open(filename, mode="w") as f:
-            rapidjson.dump(f, self.config.dict(), indent=2)
+        config_bytes = orjson.dumps(self.config.dict(), option=orjson.OPT_INDENT_2)
+        with self.source.fs.open(filename, mode="wb") as f:
+            f.write(config_bytes)
 
     def validate_source(self) -> None:
         """Validate config.json on source path and generate self.config."""
