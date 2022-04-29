@@ -1,6 +1,7 @@
 import pytest
 from lakefs_client import __version__, models
 from lakefs_client.client import LakeFSClient
+from loguru import logger
 
 
 def test_connection(lakefs_client: LakeFSClient) -> None:
@@ -20,7 +21,7 @@ def test_create_repo(
     try:
         lakefs_client.repositories.delete_repository(repo_name)
     except Exception:
-        pass
+        logger.exception("lakefs_client.repositories.delete_repository exception: ")
     new_repo = models.RepositoryCreation(
         storage_namespace=namespace,
         name=repo_name,

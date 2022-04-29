@@ -2,6 +2,7 @@ import boto3
 import pytest
 from lakefs_client import Configuration
 from lakefs_client.client import LakeFSClient
+from loguru import logger
 
 from joj.elephant.tests.config import Settings
 
@@ -38,7 +39,7 @@ def s3_bucket(settings: Settings) -> str:
     try:
         s3.create_bucket(Bucket=bucket_name)
     except Exception:
-        pass
+        logger.exception("s3.create_bucket exception: ")
     return f"s3://{bucket_name}"
 
 

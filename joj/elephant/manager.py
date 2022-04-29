@@ -39,10 +39,9 @@ def fs_parse_gitignore_fd(
             rules.append(rule)
     if not any(r.negation for r in rules):
         return lambda file_path: any(r.match(file_path) for r in rules)
-    else:
-        # We have negation rules. We can't use a simple "any" to evaluate them.
-        # Later rules override earlier rules.
-        return lambda file_path: handle_negation(file_path, rules)
+    # We have negation rules. We can't use a simple "any" to evaluate them.
+    # Later rules override earlier rules.
+    return lambda file_path: handle_negation(file_path, rules)
 
 
 def get_archive(
@@ -116,8 +115,8 @@ class Manager:
             logger.info("In dir {}".format(step.path))
             logger.info("sub-directories: {!r}".format(step.dirs))
             logger.info("files: {!r}".format(step.files))
-            for dir in step.dirs:
-                fs.makedir(f"{step.path}/{dir.name}", recreate=True)
+            for directory in step.dirs:
+                fs.makedir(f"{step.path}/{directory.name}", recreate=True)
 
         # response = self.rclone.lsjson(path, ["-R"])
         # if response["code"] != 0:
@@ -181,7 +180,7 @@ class Manager:
 
     def validate_source(self) -> None:
         """Validate config.json on source path and generate self.config."""
-        if isinstance(self.source, LocalStorage) or isinstance(self.source, S3Storage):
+        if isinstance(self.source, (LocalStorage, S3Storage)):
             try:
                 self._list_files(source=True)
                 # self.filter_files_by_ignore()
