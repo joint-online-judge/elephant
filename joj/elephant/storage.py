@@ -83,7 +83,7 @@ class Storage(ABC):
     def close(self) -> None:
         self.fs.close()
 
-    async def extract_all(self) -> None:
+    def extract_all(self) -> None:
         pass
 
 
@@ -117,7 +117,7 @@ class S3Storage(Storage):
 
     # def download(self, remote_path: Path, local_path: Path):
 
-    async def extract_all(self) -> None:
+    def extract_all(self) -> None:
         raise NotImplementedError()
 
 
@@ -163,8 +163,15 @@ class ArchiveStorage(TempStorage):
         super().__init__()
         self.file_path = file_path
 
-    async def extract_all(self) -> None:  # FIXME: should it be async-ed?
+    def extract_all(self) -> None:  # FIXME: should it be async-ed?
         patoolib.extract_archive(self.file_path, outdir=self.path)
 
     def compress_all(self) -> None:
         patoolib.create_archive(self.file_path, [self.path])
+
+
+class CodeTextStorage(TempStorage):
+    def __init__(self, filename: str, code_text: str) -> None:
+        super().__init__()
+        self.fs.writetext(filename, code_text)
+        self.filename = filename
