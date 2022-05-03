@@ -1,6 +1,6 @@
 from abc import ABC
 from pathlib import Path
-from typing import IO, Any, BinaryIO, Optional, SupportsInt
+from typing import IO, Any, BinaryIO, List, Optional, SupportsInt
 
 import patoolib
 from fs.base import FS
@@ -175,3 +175,11 @@ class CodeTextStorage(TempStorage):
         super().__init__()
         self.fs.writetext(filename, code_text)
         self.filename = filename
+
+
+class MultipleFilesStorage(TempStorage):
+    def __init__(self, filenames: List[str], files: List[IO[bytes]]) -> None:
+        super().__init__()
+        for filename, file in zip(filenames, files):
+            self.fs.writefile(filename, file)
+        self.filenames = filenames
