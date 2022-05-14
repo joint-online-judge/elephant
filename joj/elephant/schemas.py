@@ -30,7 +30,7 @@ class FileInfo(BaseModel):
     is_dir: bool
     checksum: Optional[str] = None
     mtime: Optional[Union[datetime, str]] = None
-    size_bytes: int = 0
+    size_bytes: Optional[int] = None
 
 
 class Command(BaseModel):
