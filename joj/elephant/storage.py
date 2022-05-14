@@ -26,6 +26,7 @@ class Storage(ABC):
 
     @staticmethod
     def parse_file_info(path: Path, info: Info) -> FileInfo:
+        print(f"{info.size=}")
         return FileInfo(
             path=info.make_path(str(path.parent)),
             is_dir=info.is_dir,
@@ -109,7 +110,7 @@ class S3Storage(Storage):
     def getinfo(self, path: Path) -> FileInfo:
         info = self.fs.getinfo(path=str(path), namespaces=["details", "s3"])
         file_info = self.parse_file_info(path, info)
-        checksum: Optional[str] = info.raw["s3"].get("e_tag", None)
+        checksum: Optional[str] = info.raw.get("s3", {}).get("e_tag", None)
         if checksum:
             checksum = checksum.strip('"')
         file_info.checksum = checksum
