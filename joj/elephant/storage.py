@@ -108,13 +108,16 @@ class S3Storage(Storage):
         )
 
     def getinfo(self, path: Path) -> FileInfo:
-        info = self.fs.getinfo(path=str(path), namespaces=["details", "s3"])
-        file_info = self.parse_file_info(path, info)
-        checksum: Optional[str] = info.raw.get("s3", {}).get("e_tag", None)
-        if checksum:
-            checksum = checksum.strip('"')
-        file_info.checksum = checksum
-        return file_info
+        try:
+            info = self.fs.getinfo(path=str(path), namespaces=["details", "s3"])
+            file_info = self.parse_file_info(path, info)
+            checksum: Optional[str] = info.raw.get("s3", {}).get("e_tag", None)
+            if checksum:
+                checksum = checksum.strip('"')
+            file_info.checksum = checksum
+            return file_info
+        except FSError as e:
+            raise FileSystemError(str(e))
 
     # def download(self, remote_path: Path, local_path: Path):
 
