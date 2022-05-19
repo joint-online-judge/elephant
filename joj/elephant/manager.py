@@ -1,7 +1,6 @@
-from contextlib import contextmanager
 from os.path import dirname
 from pathlib import Path
-from typing import IO, Any, Callable, Generator, Optional, Tuple
+from typing import IO, Any, Callable, Optional, Tuple
 
 import orjson
 from fs.errors import FSError
@@ -18,7 +17,7 @@ from joj.elephant.errors import (
 )
 from joj.elephant.rclone import RClone
 from joj.elephant.schemas import ArchiveType, Config
-from joj.elephant.storage import LocalStorage, S3Storage, Storage
+from joj.elephant.storage import LocalStorage, S3Storage, Storage, TempStorage
 
 
 def fs_parse_gitignore_fd(
@@ -89,16 +88,8 @@ class Manager:
     #     archive, archive_type = get_archive(filename, archive_type)
     #     archive.extract_all(archive_fp, self.source.path)
 
-    @contextmanager
-    def _open_source_file(
-        self, filename: str, mode: str = "r"
-    ) -> Generator[Optional[IO[Any]], None, None]:
-        if self.source.fs.exists(filename):
-            yield self.source.fs.open(filename, mode)
-        yield None
-
     def _init_ignore(self) -> None:
-        with self._open_source_file(".gitignore") as ignore_file:
+        with self.source.fs.open(".gitignore", mode="r") as ignore_file:
             if ignore_file:
                 self.ignore = fs_parse_gitignore_fd(ignore_file)
 
@@ -164,23 +155,23 @@ class Manager:
     #     self.files = new_files
 
     def _parse_and_update_config(self) -> None:
-        with self._open_source_file("config.json") as config_file:
+        with self.source.fs.open("config.json", mode="r") as config_file:
             if config_file is None:
                 raise ConfigError("config file not found!")
             data = orjson.loads(config_file.read())
         self.config = Config(**data)
         logger.info(self.config)
 
-    def _generate_config(self) -> None:
-        filename = "config.generated.json"
-        assert self.config
-        config_bytes = orjson.dumps(self.config.dict(), option=orjson.OPT_INDENT_2)
-        with self.source.fs.open(filename, mode="wb") as f:
-            f.write(config_bytes)
+    # def _generate_config(self) -> None:
+    #     filename = "config.generated.json"
+    #     assert self.config
+    #     config_bytes = orjson.dumps(self.config.dict(), option=orjson.OPT_INDENT_2)
+    #     with self.source.fs.open(filename, mode="wb") as f:
+    #         f.write(config_bytes)
 
     def validate_source(self) -> None:
         """Validate config.json on source path and generate self.config."""
-        if isinstance(self.source, (LocalStorage, S3Storage)):
+        if isinstance(self.source, (LocalStorage, TempStorage, S3Storage)):
             try:
                 self._list_files(source=True)
                 # self.filter_files_by_ignore()
@@ -196,7 +187,7 @@ class Manager:
             raise FileSystemSyncError("sync failed, destination not defined!")
         try:
             self.validate_source()
-            self._generate_config()
+            # self._generate_config()
             self.sync_without_validation()
         except FSError as e:
             raise FileSystemError(str(e))

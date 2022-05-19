@@ -10,7 +10,7 @@ from fs.osfs import OSFS
 from fs.tempfs import TempFS
 from fs_s3fs import S3FS
 
-from joj.elephant.errors import FileSystemError
+from joj.elephant.errors import ArchiveError, FileSystemError
 from joj.elephant.schemas import FileInfo
 
 
@@ -26,7 +26,6 @@ class Storage(ABC):
 
     @staticmethod
     def parse_file_info(path: Path, info: Info) -> FileInfo:
-        print(f"{info.size=}")
         return FileInfo(
             path=info.make_path(str(path.parent)),
             is_dir=info.is_dir,
@@ -167,11 +166,17 @@ class ArchiveStorage(TempStorage):
         super().__init__()
         self.file_path = file_path
 
-    def extract_all(self) -> None:  # FIXME: should it be async-ed?
-        patoolib.extract_archive(self.file_path, outdir=self.path)
+    def extract_all(self) -> None:
+        try:
+            patoolib.extract_archive(self.file_path, outdir=self.path)
+        except Exception as e:
+            raise ArchiveError(str(e))
 
     def compress_all(self) -> None:
-        patoolib.create_archive(self.file_path, [self.path])
+        try:
+            patoolib.create_archive(self.file_path, [self.path])
+        except Exception as e:
+            raise ArchiveError(str(e))
 
 
 class CodeTextStorage(TempStorage):

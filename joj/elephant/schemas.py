@@ -78,6 +78,10 @@ class Config(APIModel):
     languages: List[Language]
     language_default: Optional[LanguageDefault]
 
+    @classmethod
+    def generate_default_value(cls) -> "Config":
+        return cls(languages=[Language(name="c", cases=[Case()])])
+
     @root_validator
     def validate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         old_values = deepcopy(values)
