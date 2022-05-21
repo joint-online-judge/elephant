@@ -82,13 +82,8 @@ class Config(APIModel):
     def generate_default_value(cls) -> "Config":
         return cls(languages=[Language(name="c", cases=[Case()])])
 
-    @root_validator
-    def validate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        old_values = deepcopy(values)
-        values["languages"] = [language.dict() for language in values["languages"]]
-        if values.get("language_default"):
-            values["language_default"] = values["language_default"].dict()
-        logger.debug(f"original config values: {values}")
+    @classmethod
+    def parse_defaults_dict(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         for i, language in enumerate(values["languages"]):
             if values.get("language_default"):
                 language = {
@@ -105,8 +100,23 @@ class Config(APIModel):
                         **{k: v for k, v in case.items() if v is not None},
                     }
             values["languages"][i] = language
-        logger.debug(f"parsed config values: {values}")
-        for i, language in enumerate(values["languages"]):
+        return values
+
+    @classmethod
+    def parse_defaults(cls, config: "Config") -> "Config":
+        return cls(**cls.parse_defaults_dict(config.dict()))
+
+    @root_validator
+    def validate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        old_values = deepcopy(values)
+        # make everything a python dict
+        values["languages"] = [language.dict() for language in values["languages"]]
+        if values.get("language_default"):
+            values["language_default"] = values["language_default"].dict()
+        logger.debug(f"original config values: {values}")
+        parsed_values = cls.parse_defaults_dict(values)
+        logger.debug(f"parsed config values: {parsed_values}")
+        for i, language in enumerate(parsed_values["languages"]):
             for j, case in enumerate(language["cases"]):
                 for field in Case.__fields__.keys():
                     if case.get(field) is None:
