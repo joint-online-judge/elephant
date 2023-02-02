@@ -71,7 +71,7 @@ class LanguageDefault(APIModel):
 
 
 class Language(LanguageDefault):
-    name: str
+    name: str = "c++"
 
 
 class Config(APIModel):
@@ -80,7 +80,7 @@ class Config(APIModel):
 
     @classmethod
     def generate_default_value(cls) -> "Config":
-        return cls(languages=[Language(name="c", cases=[Case()])])
+        return cls(languages=[Language(name="c++", cases=[Case()])])
 
     @classmethod
     def parse_defaults_dict(cls, values: Dict[str, Any]) -> Dict[str, Any]:
